@@ -10,21 +10,27 @@ using Interpolations
 using Distributions
 using Roots
 using LaTeXStrings
-using CSV
 using DataFrames
+using CSV
 using DifferentialEquations
 using Random
 using StatsPlots
 using StructuralIdentifiability
+using Colors
 
 ## Export functions to be used
 export makeSyntheticData
 export pwaFunction
 export odesolver
+export DataFrame
+export CSV
+export sum_loglikelihood
+export optimise
 
 ## Include the files containing the functions
 include("makeSyntheticData.jl")
 include("pwaFunction.jl")
 include("odesolver.jl")
+inxlusw("optimisingFunctions.jl")
 
 end
