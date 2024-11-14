@@ -26,11 +26,13 @@ export DataFrame
 export CSV
 export sum_loglikelihood
 export optimise
+export funcInterpCI
 
 ## Include the files containing the functions
 include("makeSyntheticData.jl")
 include("pwaFunction.jl")
 include("odesolver.jl")
-inxlusw("optimisingFunctions.jl")
+include("optimisingFunctions.jl")
+include("funcInterpCI.jl")
 
 end

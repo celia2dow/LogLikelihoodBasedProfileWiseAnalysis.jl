@@ -7,7 +7,7 @@ function sum_loglikelihood(time,params_combined,ICs,ode_system,data,error_type)
     if error_type == "Normal" || error_type == "Lognormal"
         pars = params_combined[1:end-1]     # Extract the model parameters
     end
-    y=odesolver(time,pars,ICs,ode_system);  # Solve the ODE for the given parameter values
+    y=odesolver(time,pars,ICs,ode_system);  # Find the model solution for the given parameter values
     e=0;                                    # Initialise sum of loglikelihood values
 
     if error_type == "Normal"

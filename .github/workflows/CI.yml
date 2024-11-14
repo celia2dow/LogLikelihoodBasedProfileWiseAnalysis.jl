@@ -1,4 +1,4 @@
-name: CI
+name: CI                                                            # Suggestiongs:
 on:
   push:
     branches:
@@ -6,26 +6,26 @@ on:
     tags: ['*']
   pull_request:
   workflow_dispatch:
-concurrency:
-  # Skip intermediate builds: always.
-  # Cancel intermediate builds: only if it is a pull request build.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+concurrency:                                                        # delete
+  # Skip intermediate builds: always.                               # delete
+  # Cancel intermediate builds: only if it is a pull request build. # delete
+  group: ${{ github.workflow }}-${{ github.ref }}                   # delete
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}   # delete
 jobs:
-  test:
+  test: # Job to run test suite
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    permissions: # needed to allow julia-actions/cache to proactively delete old caches that it has created
-      actions: write
-      contents: read
+    timeout-minutes: 60                                             # delete
+    permissions: # needed to allow julia-actions/cache to proactively delete old caches that it has created # delete
+      actions: write                                                # delete
+      contents: read                                                # delete
     strategy:
       fail-fast: false
       matrix:
         version:
           - '1.10'
           - '1.6'
-          - 'pre'
+          - 'pre'                                                   # - 'nightly'
         os:
           - ubuntu-latest
         arch:
@@ -36,6 +36,24 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v2
+      - uses: julia-actions/cache@v2                                # delete - replace below
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+
+       
+#       - uses: actions/cache@v1
+#         env:
+#           cache-name: cache-artifacts
+#         with:
+#           path: ~/.julia/artifacts
+#           key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
+#           restore-keys: |
+#             ${{ runner.os }}-test-${{ env.cache-name }}-
+#             ${{ runner.os }}-test-
+#             ${{ runner.os }}-
+
+
+#       - uses: julia-actions/julia-processcoverage@v1
+#       - uses: codecov/codecov-action@v3
+#         with:
+#           file: lcov.info

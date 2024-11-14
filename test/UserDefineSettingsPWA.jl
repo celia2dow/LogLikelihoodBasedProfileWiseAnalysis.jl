@@ -1,0 +1,164 @@
+# Dowling (2024)
+# Adapted from Murphy et al. (2023) 
+
+# Calls MakeSyntheticData.jl to generate synthetic data and calls 
+# PWAFunction.jl given a user-defined error and mechanistic model,
+# and user-defined guesses and bounds for the parameters.
+
+#######################################################################################
+## Package installation
+#######################################################################################
+
+# Activate the package environment
+using Pkg
+env_path = "/Users/aliladearie/Documents/RA_work/Heterogeneity in tumour spheroid growth " * 
+           "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
+           # Change this depending on the location of the package in your directory
+Pkg.activate(env_path)  # Activate the environment
+
+# Check if the environment has the required packages
+required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
+                     "Roots", "LaTeXStrings", "CSV", "DataFrames", 
+                     "DifferentialEquations", "Random", 
+                     "StatsPlots", "StructuralIdentifiability", "Colors"]
+
+# Get the current environment's package names
+installed_packages = keys(Pkg.installed())
+
+# Flag to track if any package is missing
+missing_packages = false
+
+# Check for each required package and add if not already in Project.toml
+for pkg in required_packages
+    if !(pkg in installed_packages)
+        global missing_packages = true
+        println("Missing package: $pkg. Installing...")  # Print the missing package name
+        Pkg.add(pkg)
+    else
+        println("$pkg is already installed.")  # Print the already installed package
+    end
+end
+
+# Ensure all packages are installed
+if missing_packages
+    Pkg.instantiate()
+    # Pkg.update()
+end
+
+# Use the package
+using LogLikelihoodBasedProfileWiseAnalysis
+
+#######################################################################################
+## User defined settings
+#######################################################################################
+
+## Seed the simulation if desired
+seed_num = 1234
+
+## Number of points between guess and bounds for loglikelihood exploration
+npts = 40;
+
+## Parameters
+struct store_variables # DO NOT EDIT
+    names::Union{Vector{String}, String}                    # String for names
+    true_values::Union{Vector{Float64}, Float64, Nothing}   # True values if known
+    lower_bounds::Union{Vector{Float64}, Float64, Nothing}  # Lower bounds
+    upper_bounds::Union{Vector{Float64}, Float64, Nothing}  # Upper bounds
+    initial_values::Union{Vector{Float64}, Float64}         # Initial guesses or initial conditions
+    # Constructor function for all five fields
+    function store_variables(names::Union{Vector{String}, String}, 
+        true_values::Union{Vector{Float64}, Float64, Nothing},
+        lower_bounds::Union{Vector{Float64}, Float64, Nothing}, 
+        upper_bounds::Union{Vector{Float64}, Float64, Nothing},  
+        initial_values::Union{Vector{Float64}, Float64})
+        return new(names, true_values, lower_bounds, upper_bounds, initial_values)
+    end
+    # Constructor function for four fields
+    function store_variables(names::Union{Vector{String}, String}, 
+        lower_bounds::Union{Vector{Float64}, Float64, Nothing}, 
+        upper_bounds::Union{Vector{Float64}, Float64, Nothing},  
+        initial_values::Union{Vector{Float64}, Float64})
+        return new(names, nothing, lower_bounds, upper_bounds, initial_values) # Assign nothing to true_values
+    end
+    # Constructor function for two fields (default true_values to nothing)
+    function store_variables(names::Union{Vector{String}, String}, 
+        initial_values::Union{Vector{Float64}, Float64})
+        return new(names, nothing, nothing, nothing, initial_values)  # Assign nothing to true_values and bounds
+    end
+end
+# Store in the following form: 
+#       store_variables([name1, name 2, ...], [true_value1, true_value2, ...], [lower_bound1, lower_bound2, ...], [upper_bound1, upper_bound2,...], [initial_value1, initial_value2, ...])
+# Or if true values are unknown:
+#       store_variables([name1, name 2, ...], [lower_bound1, lower_bound2, ...], [upper_bound1, upper_bound2,...], [guess_value1, initial_value2, ...])
+# Or if true values and bounds are unnecessary:
+#       store_variables([name1, name 2, ...], [guess_value1, initial_value2, ...])
+
+# Mechanistic model - edit
+r1=1.0;
+r2=0.5;
+guess_r1 = 0.95;
+guess_r2 = 0.43;
+r1_lb = 0.5; r1_ub = 1.5;
+r2_lb = 0.1; r2_ub = 0.9;
+model_params = store_variables(     # Store the true model parameter values and their names
+    ["R_{d}","ζ"], 
+    [r1, r2], 
+    [r1_lb, r2_lb], 
+    [r1_ub, r2_ub], 
+    [guess_r1,guess_r2]) 
+
+# Noise model - edit
+error_type = "Normal"
+Sd = 0.4;
+guess_Sd = 0.3;
+Sd_lb = 0.2; Sd_ub = 0.8;
+noise_params = store_variables(     # Store the true noise parameter valuess and their names
+    "σ_{L}", 
+    Sd, 
+    Sd_lb, 
+    Sd_ub, 
+    guess_Sd) 
+
+# Initial conditions - edit
+C10=100.0;
+C20=10.0;
+X_array = store_variables(          # Store the initial conditions and the names of each state variable X_i(t)
+    ["C_{1}(t)", "C_{2}(t)"], 
+    [C10, C20]) 
+
+# Data time-points - edit
+t_max = 5.0;
+times = LinRange(0.0,t_max, 20); # synthetic data measurement times at which to generate data points
+
+## Mathematical model: system of differential equations (ODE or PDE) - edit
+# 1 state variable example:
+# f(u,p,t) = (p[1]*u/3) * (1 - max(0, (1+p[2]/p[1]) * (u-p[3])^3/(u^3))) # p[1]=λ, p[2]=zeta, and p[3]=R_d
+# More than 1 state variable example:
+function DE!(du,u,p,t)  # ! is "bang" convention indicating that the function modifies its inputs
+    r1,r2=p
+    du[1]=-r1*u[1];
+    du[2]=r1*u[1] - r2*u[2];
+end
+   
+#######################################################################################
+## Data loading or generation
+#######################################################################################
+
+# Generate seed number if not given
+if !isdefined(Main, :seed_num)
+    seed_num = rand(1000:9999)
+end
+
+# Generate data synthetically
+data = makeSyntheticData(times, X_array.initial_values, DE!, model_params.true_values, error_type, noise_params.true_values)
+df_data = DataFrame(data, :auto)  # Use :auto to automatically name columns
+CSV.write( "synthetic_data" * string(seed_num) * ".csv", df_data)
+
+# Or read a CSV file of data
+# data = DataFrame(CSV.File("path/to/your/file.csv"))  # Update with the correct path
+
+#######################################################################################
+## Path Wise Analysis
+#######################################################################################
+
+pwaFunction(times, X_array, DE!, model_params, error_type, noise_params, seed_num, data, npts)
