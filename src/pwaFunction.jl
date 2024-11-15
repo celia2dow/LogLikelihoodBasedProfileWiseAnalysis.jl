@@ -37,18 +37,21 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
     θG = [guess_r; guess_er]                     # Combined initial guesses
     lb_r = model_params.lower_bounds            # Lower bounds
     lb_er = noise_params.lower_bounds
-    lb = [lb_r; lb_er];        
+    lb = [lb_r; lb_er]; lb = float.(lb);       
     ub_r = model_params.upper_bounds            # Upper bounds
     ub_er = noise_params.upper_bounds
-    ub = [ub_r; ub_er];        
+    ub = [ub_r; ub_er]; ub = float.(ub);         
     num_r = length(guess_r) + length(guess_er)  # Number of model and noise parameters combined
+    num_known_parameters = 0;                   # Track the number of known parameters provided to the function
     if !isnothing(model_params.true_values)
         r = model_params.true_values            # Model parameter values
+        num_known_parameters = num_known_parameters +length(r)
     else
         r = nothing
     end
     if !isnothing(noise_params.true_values)
         er = noise_params.true_values           # Error model parameter values
+        num_known_parameters = num_known_parameters +length(er)
     else
         er = nothing
     end
@@ -83,15 +86,14 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
     if num_x>length(colour)
         for i in 1:num_x-length(colour)
             new_colour = RGB(rand(), rand(), rand())   # Create a random new colour
-            colour = [colour, new_colour]             # Add it to the array of colours
+            global colour = [colour, new_colour]             # Add it to the array of colours
         end
     end
 
     #######################################################################################
     ### Generate smooth data/true solution if true parameter parameter values are known
     if !isnothing(r)
-        model_params_only = r[1:length(guess_r)]  
-        data0_smooth = odesolver(time_smooth,model_params_only,ICs,ode_system)
+        data0_smooth = odesolver(time_smooth,r,ICs,ode_system)
         if size(data0_smooth)[1] > num_x
             data0_smooth = data0_smooth'    # Convert to series of row vectors if not already
         end
@@ -131,7 +133,7 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         (xopt,fopt)  = optimise(funMLE,θG,lb,ub) 
 
         # Storing MLE 
-        rmle = Array{Float64}(undef,1,num_r);    # Initialise array for storing the running MLE estimates of parameters
+        rmle = Array{Float64}(undef,num_r);    # Initialise array for storing the running MLE estimates of parameters
         global fmle=fopt
         for i in 1:num_r
             global rmle[i] = xopt[i]
@@ -170,7 +172,7 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
             ri_min = lb[i]
             ri_max = ub[i]
             ri_range_lower = reverse(LinRange(ri_min,rmle[i],npts))
-            ri_range_upper = reverse(LinRange(rmle[i] + (ri_max-rmle[i])/npts,ri_max,npts))
+            ri_range_upper = LinRange(rmle[i] + (ri_max-rmle[i])/npts,ri_max,npts)
 
             not_ri_range_lower = zeros(num_r-1,npts)
             llri_lower = zeros(npts)
@@ -185,16 +187,16 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
             predict_ri_realisations_upper_uq=zeros(num_x,length(time_smooth),npts)
 
             # Lower and upper bounds for parameters that are not ri
-            lb_i = lb; lb_i = deleteat!(lb,i);
-            ub_i = ub; ub_i = deleteat!(ub,i);
+            lb_i = copy(lb); deleteat!(lb_i,i);
+            ub_i = copy(ub); deleteat!(ub_i,i);
 
             # Start at MLE and increase parameter (upper)
             for j in 1:npts
                 function fun_upper(aa)
                     # Create an array of the unknown parameters
-                    params_combined = aa[1]
+                    params_combined = copy(aa[1])
                     for k = 2:num_r-1
-                        params_combined = [params_combined, aa[k]]
+                        params_combined = [params_combined, copy(aa[k])]
                     end
                     # Add the single known parameter in the array in the appropriate order
                     params_combined = insert!(params_combined, i, ri_range_upper[j])
@@ -203,16 +205,15 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
                 end
 
                 # Find the non-ri parameter values that maximise the loglikelihood for each value of ri in the upper range
-                println("rmle $rmle")
-                local θG_i=rmle; θG_i = deleteat!(θG_i,i) # Use MLE values as the guess for non-ri parameters
+                local θG_i=copy(rmle); deleteat!(θG_i,i) # Use MLE values as the guess for non-ri parameters
                 local (xo,fo)=optimise(fun_upper,θG_i,lb_i,ub_i)
                 not_ri_range_upper[:,j]=xo[:]
                 llri_upper[j]=fo[1]
                 
                 # Find model solutions given the set value of ri, and the optimised non-ri values
-                if error_type == "Normal" || error_type == "Lognormal" && 
+                if error_type == "Normal" || error_type == "Lognormal"
                     if i != num_r
-                        model_params_only = not_ri_range_upper[1:end-1,j]
+                        model_params_only = copy(not_ri_range_upper[1:end-1,j])
                         model_params_only = insert!(model_params_only,i,ri_range_upper[j])
                         Sd_j = not_ri_range_upper[end,j]
                     elseif i == num_r
@@ -241,7 +242,7 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
                     global rmle[i] = ri_range_upper[j]
                     indices = [1:i-1; i+1:num_r]
                     for l1 in indices
-                        if l>i
+                        if l1>i
                             l2=l1-1   # Reduce index if parameter comes after the current profile's parameter
                         else
                             l2=l1
@@ -255,9 +256,9 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
             for j in 1:npts
                 function fun_lower(aa)
                     # Create an array of the unknown parameters
-                    params_combined = aa[1]
+                    params_combined = copy(aa[1])
                     for k = 2:num_r-1
-                        params_combined = [params_combined, aa[k]]
+                        params_combined = [params_combined, copy(aa[k])]
                     end
                     # Add the single known parameter in the array in the appropriate order
                     params_combined = insert!(params_combined, i, ri_range_lower[j])
@@ -266,15 +267,15 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
                 end
                 
                 # Find the non-ri parameter values that maximise the loglikelihood for each value of ri in the upper range
-                local θG_i=rmle; θG_i = deleteat!(θG_i,i)
+                local θG_i=copy(rmle); deleteat!(θG_i,i)
                 local (xo,fo)=optimise(fun_lower,θG_i,lb_i,ub_i)
                 not_ri_range_lower[:,j]=xo[:]
                 llri_lower[j]=fo[1]
                 
                 # Find model solutions given the set value of ri, and the optimised non-ri values
-                if error_type == "Normal" || error_type == "Lognormal" && 
+                if error_type == "Normal" || error_type == "Lognormal"
                     if i != num_r
-                        model_params_only = not_ri_range_lower[1:end-1,j]
+                        model_params_only = copy(not_ri_range_lower[1:end-1,j])
                         model_params_only = insert!(model_params_only,i,ri_range_lower[j])
                         Sd_j = not_ri_range_lower[end,j]
                     elseif i == num_r
@@ -303,7 +304,7 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
                     global rmle[i] = ri_range_lower[j]
                     indices = [1:i-1; i+1:num_r]
                     for l1 in indices
-                        if l>i
+                        if l1>i
                             l2=l1-1   # Reduce index if parameter comes after the current profile's parameter
                         else
                             l2=l1
@@ -359,7 +360,7 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
             end
             for j in 1:(npts)
                 if (llri_upper[j].-maximum(llri)) >= TH_realisations
-                    for j in 1:length(time_smooth)
+                    for k in 1:length(time_smooth)
                         for l in 1:num_x
                             max_realisations_ri[l,k]=max(predict_ri_realisations_upper_uq[l,k,j],max_realisations_ri[l,k])
                             min_realisations_ri[l,k]=min(predict_ri_realisations_upper_lq[l,k,j],min_realisations_ri[l,k]) 
@@ -421,8 +422,17 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
                 legendfont=fnt,linecolor=:deepskyblue3)
             profile_i=hline!([-1.92],lw=2,linecolor=:black,linestyle=:dot)
             profile_i=vline!([rmle[i]],lw=3,linecolor=:red)
-            if !isnothing(r)  
-                profile_i=vline!([r[i]],lw=3,linecolor=:rosybrown,linestyle=:dash)
+            if num_known_parameters>0
+                if i<=length(r) 
+                    if !isnothing(r)    
+                        profile_i=vline!([r[i]],lw=3,linecolor=:rosybrown,linestyle=:dash)
+                    end
+                else
+                    if !isnothing(er)
+                        m = i-length(r)
+                        profile_i=vline!([er[m]],lw=3,linecolor=:rosybrown,linestyle=:dash)
+                    end
+                end
             end
 
             display(profile_i)
@@ -478,15 +488,17 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
 
         # Create column names for DataFrame
         column_names = [Symbol("$ii MLE") for ii in all_param_names]
-        column_names = vcat(column_names, [Symbol("lb_CI_$ii") for ii in all_param_names])
-        column_names = vcat(column_names, [Symbol("ub_CI_$ii") for ii in all_param_names])
+        column_names = vcat(column_names, [Symbol("lb CI $ii") for ii in all_param_names])
+        column_names = vcat(column_names, [Symbol("ub CI $ii") for ii in all_param_names])
 
         # Initialise DataFrame with one row and num_r columns (all filled with 'missing' initially)
+        is_defined = 0
         if @isdefined(df_MLEBoundsAll) == 0
-            println("not defined")
+            println("MLE TABLE NOT DEFINE")
             global df_MLEBoundsAll = DataFrame(column_names .=> fill(missing, length(column_names)))
         else
-            println("DEFINED")
+            println("MLE TABLE IS DEFINED")
+            is_defined = 1
             global df_MLEBoundsAll_thisrow = DataFrame(column_names .=> fill(missing, length(column_names)))
         end
         
@@ -494,21 +506,21 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         for i in 1:num_r
             param_name = all_param_names[i]
 
-            (lb_CI_ri,ub_CI_ri) = funcInterpCI(rmle[i],interp_points_ri_store[i,:],interp_nllri_store[i,:],TH)
+            (lb_CI_ri,ub_CI_ri) = funcInterpCI(rmle[i],interp_points_ri_range_store[i,:],interp_nllri_store[i,:],TH)
             lb_CI[i]=lb_CI_ri
             ub_CI[i]=ub_CI_ri
-            println("CI for parameter " * param_name * ":\n")
+            println("CI for parameter " * param_name * ":")
             println(round(lb_CI_ri; digits = 4))
             println(round(ub_CI_ri; digits = 4))
 
-            if @isdefined(df_MLEBoundsAll) == 0
+            if is_defined == 0
                 df_MLEBoundsAll[!, Symbol(param_name * " MLE")] .= rmle[i]
-                df_MLEBoundsAll[!, Symbol("lb_CI_" * param_name)] .= lb_CI[i]
-                df_MLEBoundsAll[!, Symbol("ub_CI_" * param_name)] .= ub_CI[i]
-            else
+                df_MLEBoundsAll[!, Symbol("lb CI " * param_name)] .= lb_CI[i]
+                df_MLEBoundsAll[!, Symbol("ub CI " * param_name)] .= ub_CI[i]
+            elseif is_defined == 1
                 df_MLEBoundsAll_thisrow[!, Symbol(param_name * " MLE")] .= rmle[i]
-                df_MLEBoundsAll_thisrow[!, Symbol("lb_CI_" * param_name)] .= lb_CI[i]
-                df_MLEBoundsAll_thisrow[!, Symbol("ub_CI_" * param_name)] .= ub_CI[i]
+                df_MLEBoundsAll_thisrow[!, Symbol("lb CI " * param_name)] .= lb_CI[i]
+                df_MLEBoundsAll_thisrow[!, Symbol("ub CI " * param_name)] .= ub_CI[i]
                 append!(df_MLEBoundsAll,df_MLEBoundsAll_thisrow)
             end
         end
@@ -520,12 +532,12 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         ### Confidence sets for model solutions
 
         # Define min and max y-values given the confidence intervals around the data
-        ymin_datCI = ymin_dat                                                               # For data with the CI
-        ymax_datCI = ymax_dat
+        ymin_datCI = copy(ymin_dat)                                                               # For data with the CI
+        ymax_datCI = copy(ymax_dat)
         for i in 1:num_r
             for j in 1:num_x
-                yij_min = minimum(data0_smooth_MLE_recomputed[i,:].-min_ri_store[i,j,:])    # Min value of best fit + confidence ribbon
-                yij_max = maximum(data0_smooth_MLE_recomputed[i,:].+max_ri_store[i,j,:])    # Max value of best fit + confidence ribbon
+                yij_min = minimum(data0_smooth_MLE_recomputed[j,:].-min_ri_store[i,j,:])    # Min value of best fit + confidence ribbon
+                yij_max = maximum(data0_smooth_MLE_recomputed[j,:].+max_ri_store[i,j,:])    # Max value of best fit + confidence ribbon
                 ymin_datCI = min(yij_min, ymin_datCI)                                       # Compare against previous min
                 ymax_datCI = max(yij_max, ymax_datCI)                                       # Compare against previous max
             end
@@ -553,7 +565,7 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
                     time_smooth,data0_smooth_MLE_recomputed[j,:],w=0,c=colour[j],
                     ribbon=(
                         data0_smooth_MLE_recomputed[j,:].-min_ri_store[i,j,:],                          # Shaded region beneath line of best fit
-                        max_ri_store[i,j,:].-data0_smooth_MLE_recomputed[i,:]                                 # Shaded region above line of best fit
+                        max_ri_store[i,j,:].-data0_smooth_MLE_recomputed[j,:]                                 # Shaded region above line of best fit
                     ),fillalpha=.2)
             end
 
@@ -564,11 +576,11 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         
         # union
         max_overall=zeros(num_x,length(time_smooth))
-        min_overall=1000*ones(2,length(time_smooth))
+        min_overall=1000*ones(num_x,length(time_smooth))
         for i in 1:num_x
             for j in 1:length(time_smooth)
-                max_overall[i,k]=maximum(max_ri_store[:,i,j])
-                min_overall[i,k]=minimum(min_ri_store[:,i,j])
+                max_overall[i,j]=maximum(max_ri_store[:,i,j])
+                min_overall[i,j]=minimum(min_ri_store[:,i,j])
             end
         end
 
@@ -592,9 +604,9 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
                 ),fillalpha=.2)
         end
 
-        display(confmodelu)
-        savefig(confmodelu,filepath_save[1] * "Fig_confmodelu"   * ".pdf")
-        savefig(confmodelu,filepath_save[1] * "Fig_confmodelu"   * ".png")
+        display(confmodel_u)
+        savefig(confmodel_u,filepath_save[1] * "Fig_confmodelu"   * ".pdf")
+        savefig(confmodel_u,filepath_save[1] * "Fig_confmodelu"   * ".png")
     
     #######################################################################################
         ### Plot difference of confidence set for model solutions and the model solution at MLE 
@@ -604,8 +616,8 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         ymax_CI1 = 0
         for i in 1:num_r
             for j in 1:num_x
-                CIij_min = minimum(min_ri_store[i,j,:])     # Min value of confidence ribbon
-                CIij_max = maximum(min_ri_store[i,j,:])     # Max value of confidence ribbon
+                CIij_min = minimum(min_ri_store[i,j,:].-data0_smooth_MLE_recomputed[j,:])     # Min value of confidence ribbon
+                CIij_max = maximum(max_ri_store[i,j,:].-data0_smooth_MLE_recomputed[j,:])     # Max value of confidence ribbon
                 ymin_CI1 = min(ymin_CI1, CIij_min)          # Compare against previous min
                 ymax_CI1 = max(ymax_CI1, CIij_max)          # Comapre against previous max
             end
@@ -663,12 +675,12 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         ### Confidence sets for model realisations
             
         # Define min and max y-values given the confidence intervals around the realisations
-        ymin_realCI = ymin_dat                                                                          # For data with the CI
-        ymax_realCI = ymax_dat
+        ymin_realCI = copy(ymin_dat)                                                                          # For data with the CI
+        ymax_realCI = copy(ymax_dat)
         for i in 1:num_r
             for j in 1:num_x
-                yij_min = minimum(data0_smooth_MLE_recomputed[i,:].-min_realisations_ri_store[i,j,:])   # Min value of best fit + confidence ribbon
-                yij_max = maximum(data0_smooth_MLE_recomputed[i,:].+max_realisations_ri_store[i,j,:])   # Max value of best fit + confidence ribbon       
+                yij_min = minimum(data0_smooth_MLE_recomputed[j,:].-min_realisations_ri_store[i,j,:])   # Min value of best fit + confidence ribbon
+                yij_max = maximum(data0_smooth_MLE_recomputed[j,:].+max_realisations_ri_store[i,j,:])   # Max value of best fit + confidence ribbon       
                 ymin_realCI = min(yij_min, ymin_realCI)                                                 # Compare against previous min
                 ymax_realCI = max(yij_max, ymax_realCI)                                                 # Compare against previous max
             end
@@ -707,11 +719,11 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         
         # union
         max_realisations_overall=zeros(num_x,length(time_smooth))
-        min_realisations_overall=1000*ones(2,length(time_smooth))
+        min_realisations_overall=1000*ones(num_x,length(time_smooth))
         for i in 1:num_x
             for j in 1:length(time_smooth)
-                max_realisations_overall[i,k]=maximum(max_realisations_ri_store[:,i,j])
-                min_realisations_overall[i,k]=minimum(min_realisations_ri_store[:,i,j])
+                max_realisations_overall[i,j]=maximum(max_realisations_ri_store[:,i,j])
+                min_realisations_overall[i,j]=minimum(min_realisations_ri_store[:,i,j])
             end
         end
 
@@ -801,5 +813,4 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         display(confrealdiff_u)
         savefig(confrealdiff_u,filepath_save[1] * "Fig_confrealdiffu"   * ".pdf")
         savefig(confrealdiff_u,filepath_save[1] * "Fig_confrealdiffu"   * ".png")
-
 end

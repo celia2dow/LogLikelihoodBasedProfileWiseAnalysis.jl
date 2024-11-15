@@ -61,28 +61,28 @@ npts = 40;
 ## Parameters
 struct store_variables # DO NOT EDIT
     names::Union{Vector{String}, String}                    # String for names
-    true_values::Union{Vector{Float64}, Float64, Nothing}   # True values if known
-    lower_bounds::Union{Vector{Float64}, Float64, Nothing}  # Lower bounds
-    upper_bounds::Union{Vector{Float64}, Float64, Nothing}  # Upper bounds
-    initial_values::Union{Vector{Float64}, Float64}         # Initial guesses or initial conditions
+    true_values::Union{Vector{Float64}, Float64, Int64, Nothing}   # True values if known
+    lower_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}  # Lower bounds
+    upper_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}  # Upper bounds
+    initial_values::Union{Vector{Float64}, Float64, Int64}         # Initial guesses or initial conditions
     # Constructor function for all five fields
     function store_variables(names::Union{Vector{String}, String}, 
-        true_values::Union{Vector{Float64}, Float64, Nothing},
-        lower_bounds::Union{Vector{Float64}, Float64, Nothing}, 
-        upper_bounds::Union{Vector{Float64}, Float64, Nothing},  
-        initial_values::Union{Vector{Float64}, Float64})
+        true_values::Union{Vector{Float64}, Float64, Int64, Nothing},
+        lower_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}, 
+        upper_bounds::Union{Vector{Float64}, Float64, Int64, Nothing},  
+        initial_values::Union{Vector{Float64}, Float64, Int64})
         return new(names, true_values, lower_bounds, upper_bounds, initial_values)
     end
     # Constructor function for four fields
     function store_variables(names::Union{Vector{String}, String}, 
-        lower_bounds::Union{Vector{Float64}, Float64, Nothing}, 
-        upper_bounds::Union{Vector{Float64}, Float64, Nothing},  
-        initial_values::Union{Vector{Float64}, Float64})
+        lower_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}, 
+        upper_bounds::Union{Vector{Float64}, Float64, Int64, Nothing},  
+        initial_values::Union{Vector{Float64}, Float64, Int64})
         return new(names, nothing, lower_bounds, upper_bounds, initial_values) # Assign nothing to true_values
     end
     # Constructor function for two fields (default true_values to nothing)
     function store_variables(names::Union{Vector{String}, String}, 
-        initial_values::Union{Vector{Float64}, Float64})
+        initial_values::Union{Vector{Float64}, Float64, Int64})
         return new(names, nothing, nothing, nothing, initial_values)  # Assign nothing to true_values and bounds
     end
 end
@@ -96,8 +96,8 @@ end
 # Mechanistic model - edit
 r1=1.0;
 r2=0.5;
-guess_r1 = 0.95;
-guess_r2 = 0.43;
+guess_r1 = 1.2;
+guess_r2 = 0.8;
 r1_lb = 0.5; r1_ub = 1.5;
 r2_lb = 0.1; r2_ub = 0.9;
 model_params = store_variables(     # Store the true model parameter values and their names
@@ -109,11 +109,11 @@ model_params = store_variables(     # Store the true model parameter values and 
 
 # Noise model - edit
 error_type = "Normal"
-Sd = 0.4;
-guess_Sd = 0.3;
-Sd_lb = 0.2; Sd_ub = 0.8;
+Sd = 5;
+guess_Sd = 8;
+Sd_lb = 1; Sd_ub = 10;
 noise_params = store_variables(     # Store the true noise parameter valuess and their names
-    "σ_{L}", 
+    "σ_{N}", 
     Sd, 
     Sd_lb, 
     Sd_ub, 
@@ -127,7 +127,7 @@ X_array = store_variables(          # Store the initial conditions and the names
     [C10, C20]) 
 
 # Data time-points - edit
-t_max = 5.0;
+t_max = 2.0;
 times = LinRange(0.0,t_max, 20); # synthetic data measurement times at which to generate data points
 
 ## Mathematical model: system of differential equations (ODE or PDE) - edit
