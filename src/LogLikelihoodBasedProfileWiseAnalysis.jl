@@ -17,11 +17,13 @@ using Random
 using StatsPlots
 using StructuralIdentifiability
 using Colors
+using Measures
 
 ## Export functions to be used
 export makeSyntheticData
 export pwaFunction
 export odesolver
+export Random
 export DataFrame
 export CSV
 export sum_loglikelihood

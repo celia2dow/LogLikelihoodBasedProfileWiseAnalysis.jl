@@ -25,15 +25,17 @@ function makeSyntheticData(args...)
         synthetic_data=0.0*zeros(num_x,length(time));    # One state variable per row
     end
     
-    # Generate synthetic data
+    # Generate synthetic data 
     if error_type == "Normal"
         Sd = noise_params
-        data_dists=[Normal(mi,Sd) for mi in odesolver(time,model_params,ICs,ode_system)];   # Generate normal distributions for each time point
+        sol1 = odesolver(time,model_params,ICs,ode_system)
+        println("package solution: $sol1")
+        data_dists=[Normal(mu,Sd) for mu in odesolver(time,model_params,ICs,ode_system)];   # Generate normal distributions for each time point
         synthetic_data=[rand(data_dist) for data_dist in data_dists];                       # Generate the noisy synthetic data from these distributions
         synthetic_data[synthetic_data .< 0] .= zero(eltype(synthetic_data))                 # Set any negative values to zero
     elseif error_type == "Lognormal"
         Sd = noise_params
-        synthetic_data = [mi*rand(LogNormal(0,Sd)) for mi in odesolver(time,model_params,ICs,ode_system)]; # Generate the noisy synthetic data
+        synthetic_data = [mu*rand(LogNormal(0,Sd)) for mu in odesolver(time,model_params,ICs,ode_system)]; # Generate the noisy synthetic data
     elseif error_type == "NoNoise"
         synthetic_data = odesolver(time,model_params,ICs,ode_system)  # Generate smooth synthetic data
     end
@@ -41,6 +43,8 @@ function makeSyntheticData(args...)
     if num_x == 1
         synthetic_data = synthetic_data' # Make column vector a row vector
     end
-   
+
+    # Set any unrealistically negative values to zero
+    synthetic_data[synthetic_data .< 0] .= zero(eltype(synthetic_data))
     return synthetic_data
 end

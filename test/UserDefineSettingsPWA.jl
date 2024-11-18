@@ -2,7 +2,7 @@
 # Adapted from Murphy et al. (2023) 
 
 # Calls MakeSyntheticData.jl to generate synthetic data and calls 
-# PWAFunction.jl given a user-defined error and mechanistic model,
+# PWAFunction.jl given a user-defined error and mechanistice model,
 # and user-defined guesses and bounds for the parameters.
 
 #######################################################################################
@@ -19,7 +19,7 @@ Pkg.activate(env_path)  # Activate the environment
 # Check if the environment has the required packages
 required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
-                     "DifferentialEquations", "Random", 
+                     "DifferentialEquations", "Random", "Measures",
                      "StatsPlots", "StructuralIdentifiability", "Colors"]
 
 # Get the current environment's package names
@@ -111,7 +111,7 @@ model_params = store_variables(     # Store the true model parameter values and 
 error_type = "Normal"
 Sd = 5;
 guess_Sd = 8;
-Sd_lb = 1; Sd_ub = 10;
+Sd_lb = 1.0; Sd_ub = 10.0;
 noise_params = store_variables(     # Store the true noise parameter valuess and their names
     "σ_{N}", 
     Sd, 
@@ -121,14 +121,14 @@ noise_params = store_variables(     # Store the true noise parameter valuess and
 
 # Initial conditions - edit
 C10=100.0;
-C20=10.0;
+C20=25.0;
 X_array = store_variables(          # Store the initial conditions and the names of each state variable X_i(t)
     ["C_{1}(t)", "C_{2}(t)"], 
     [C10, C20]) 
 
 # Data time-points - edit
-t_max = 2.0;
-times = LinRange(0.0,t_max, 20); # synthetic data measurement times at which to generate data points
+t_max = 2.0; 
+times = LinRange(0.0,t_max, 16); # synthetic data measurement times at which to generate data points
 
 ## Mathematical model: system of differential equations (ODE or PDE) - edit
 # 1 state variable example:
@@ -150,6 +150,7 @@ if !isdefined(Main, :seed_num)
 end
 
 # Generate data synthetically
+Random.seed!(seed_num)
 data = makeSyntheticData(times, X_array.initial_values, DE!, model_params.true_values, error_type, noise_params.true_values)
 df_data = DataFrame(data, :auto)  # Use :auto to automatically name columns
 CSV.write( "synthetic_data" * string(seed_num) * ".csv", df_data)
