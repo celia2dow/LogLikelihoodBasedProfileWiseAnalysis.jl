@@ -843,8 +843,8 @@ ode_system=DE!
         ymax_realCI = copy(ymax_dat)
         for i in 1:num_r
             for j in 1:num_x
-                yij_min = minimum(data0_smooth_MLE_recomputed[j,:].-min_realisations_ri_store[i,j,:])   # Min value of best fit + confidence ribbon
-                yij_max = maximum(data0_smooth_MLE_recomputed[j,:].+max_realisations_ri_store[i,j,:])   # Max value of best fit + confidence ribbon       
+                yij_min = minimum(min_realisations_ri_store[i,j,:])   # Min value of best fit + confidence ribbon
+                yij_max = maximum(max_realisations_ri_store[i,j,:])   # Max value of best fit + confidence ribbon       
                 ymin_realCI = min(yij_min, ymin_realCI)                                                 # Compare against previous min
                 ymax_realCI = max(yij_max, ymax_realCI)                                                 # Compare against previous max
             end

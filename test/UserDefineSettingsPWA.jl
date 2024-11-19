@@ -20,7 +20,7 @@ Pkg.activate(env_path)  # Activate the environment
 required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
                      "DifferentialEquations", "Random", "Measures",
-                     "StatsPlots", "Colors"] #", StructuralIdentifiability"
+                     "StatsPlots", "StructuralIdentifiability", "Colors"]
 
 # Get the current environment's package names
 installed_packages = keys(Pkg.installed())
@@ -33,7 +33,11 @@ for pkg in required_packages
     if !(pkg in installed_packages)
         global missing_packages = true
         println("Missing package: $pkg. Installing...")  # Print the missing package name
-        Pkg.add(pkg)
+        if pkg == "StructuralIdentifiability"
+            Pkg.add(Pkg.PackageSpec(;name="StructuralIdentifiability", version="v0.5.1")) # need to use older version
+        else
+            Pkg.add(pkg)
+        end
     else
         println("$pkg is already installed.")  # Print the already installed package
     end
