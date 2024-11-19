@@ -1,4 +1,4 @@
-function pwaFunction(times, X_array, ode_system, model_params, error_type, noise_params, seed_num, data, npts)
+function pwaFunction(experi_name, times, X_array, ode_system, model_params, error_type, noise_params, seed_num, data, npts)
     # Implementing an input measurement error models with an input mechanistic model of ODEs or PDEs
     # in a likelihood-based framework for estimation, identifiability analysis, 
     # and prediction. Note that the code is ideal for visualising a model with up to 6 state variables.
@@ -10,11 +10,11 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
     
     #######################################################################################
     ### Initialisation including plot options, and filepaths to save outputs
-    #pyplot()                                                                                    # plot options
+    #pyplot()                                                                                   # plot options
     fnt = Plots.font("sans-serif", 28)                                                          # plot options
     global cur_colors = palette(:default)                                                       # plot options
-    isdir(pwd() * "/ProfileWiseAnalysisOutput/") || mkdir(pwd() * "/ProfileWiseAnalysisOutput") # make folder to save figures if doesnt already exist
-    filepath_save = [pwd() * "/ProfileWiseAnalysisOutput/"]                                     # location to save figures "//ProfileWiseAnalysisOutput//"]
+    isdir(pwd() * "/ProfileWiseAnalysisOutput/"* experi_name *"/") || mkdir(pwd() * "/ProfileWiseAnalysisOutput/"* experi_name) # make folder to save figures if doesnt already exist
+    filepath_save = [pwd() * "/ProfileWiseAnalysisOutput/"* experi_name *"/"]                   # location to save figures "//ProfileWiseAnalysisOutput//experi_name//"]
 
     #######################################################################################
     ### Generate times-points for plotting known values and best fits
@@ -493,7 +493,7 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
 
         # Initialise DataFrame with one row and num_r columns (all filled with 'missing' initially)
         is_defined = 0
-        if @isdefined(df_MLEBoundsAll) == 0
+        if @isdefined(df_MLEBoundsAll) == 0 || isnothing(df_MLEBoundsAll)
             println("MLE TABLE NOT DEFINE")
             global df_MLEBoundsAll = DataFrame(column_names .=> fill(missing, length(column_names)))
         else
@@ -501,7 +501,8 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
             is_defined = 1
             global df_MLEBoundsAll_thisrow = DataFrame(column_names .=> fill(missing, length(column_names)))
         end
-        
+        println("column names: $column_names")
+        println("Is the table already defined: $is_defined")
         # Parameter by parameter, fill up row of statistics
         for i in 1:num_r
             param_name = all_param_names[i]
@@ -813,4 +814,12 @@ function pwaFunction(times, X_array, ode_system, model_params, error_type, noise
         display(confrealdiff_u)
         savefig(confrealdiff_u,filepath_save[1] * "Fig_confrealdiffu"   * ".pdf")
         savefig(confrealdiff_u,filepath_save[1] * "Fig_confrealdiffu"   * ".png")
+
+    #######################################################################################
+        # If the following are defined, delete their definitions
+        if @isdefined(df_MLEBoundsAll)
+            df_MLEBoundsAll = nothing
+        elseif @isdefined(df_MLEBoundsAll_thisrow)
+            df_MLEBoundsAll_thisrow = nothing
+        end
 end

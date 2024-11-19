@@ -18,7 +18,7 @@ function sum_loglikelihood(times,params_combined,ICs,ode_system,data,error_type)
     elseif error_type == "Lognormal"
         Sd = params_combined[end]
         model_params = params_combined[1:end-1]
-        data_dists=[LogNormal(0,a[3]) for mi in y]; # Generate LogNormal distributions for each times point
+        data_dists=[LogNormal(0,params_combined[end]) for mi in y]; # Generate LogNormal distributions for each times point
         e+=sum([loglikelihood(data_dists[i],data[i]./y[i]) for i in 1:length(data_dists)]) 
     end
 

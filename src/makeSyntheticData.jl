@@ -29,7 +29,6 @@ function makeSyntheticData(args...)
     if error_type == "Normal"
         Sd = noise_params
         sol1 = odesolver(time,model_params,ICs,ode_system)
-        println("package solution: $sol1")
         data_dists=[Normal(mu,Sd) for mu in odesolver(time,model_params,ICs,ode_system)];   # Generate normal distributions for each time point
         synthetic_data=[rand(data_dist) for data_dist in data_dists];                       # Generate the noisy synthetic data from these distributions
         synthetic_data[synthetic_data .< 0] .= zero(eltype(synthetic_data))                 # Set any negative values to zero

@@ -56,12 +56,6 @@ using LogLikelihoodBasedProfileWiseAnalysis
 ## User defined settings
 #######################################################################################
 
-## Seed the simulation if desired
-seed_num = 1234
-
-## Number of points between guess and bounds for loglikelihood exploration
-npts = 40;
-
 ## Parameters
 struct store_variables # DO NOT EDIT
     names::Union{Vector{String}, String}                    # String for names
@@ -97,6 +91,16 @@ end
 # Or if true values and bounds are unnecessary:
 #       store_variables([name1, name 2, ...], [guess_value1, initial_value2, ...])
 
+## Seed the simulation if desired
+seed_num = 1234
+
+## Number of points between guess and bounds for loglikelihood exploration
+npts = 40;
+
+## Experiment name - edit
+experi_name = "TwoCellPopulationsNormalNoise"
+
+## Parameters
 # Mechanistic model - edit
 r1=1.0;
 r2=0.5;
@@ -112,7 +116,7 @@ model_params = store_variables(     # Store the true model parameter values and 
     [guess_r1,guess_r2]) 
 
 # Noise model - edit
-error_type = "Normal"
+error_type = "Normal"               # Normal, Lognormal
 Sd = 5;
 guess_Sd = 8;
 Sd_lb = 1.0; Sd_ub = 10.0;
@@ -157,7 +161,7 @@ end
 Random.seed!(seed_num)
 data = makeSyntheticData(times, X_array.initial_values, DE!, model_params.true_values, error_type, noise_params.true_values)
 df_data = DataFrame(data, :auto)  # Use :auto to automatically name columns
-CSV.write( "synthetic_data" * string(seed_num) * ".csv", df_data)
+CSV.write( "synthetic_data" * experi_name * string(seed_num) * ".csv", df_data)
 
 # Or read a CSV file of data
 # data = DataFrame(CSV.File("path/to/your/file.csv"))  # Update with the correct path
@@ -166,4 +170,4 @@ CSV.write( "synthetic_data" * string(seed_num) * ".csv", df_data)
 ## Path Wise Analysis
 #######################################################################################
 
-pwaFunction(times, X_array, DE!, model_params, error_type, noise_params, seed_num, data, npts)
+pwaFunction(experi_name, times, X_array, DE!, model_params, error_type, noise_params, seed_num, data, npts)
