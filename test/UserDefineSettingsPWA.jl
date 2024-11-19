@@ -20,7 +20,7 @@ Pkg.activate(env_path)  # Activate the environment
 required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
                      "DifferentialEquations", "Random", "Measures",
-                     "StatsPlots", "StructuralIdentifiability", "Colors"]
+                     "StatsPlots", "Colors"] #", StructuralIdentifiability"
 
 # Get the current environment's package names
 installed_packages = keys(Pkg.installed())

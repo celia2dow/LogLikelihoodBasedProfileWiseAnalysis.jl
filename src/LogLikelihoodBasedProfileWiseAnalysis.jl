@@ -15,7 +15,7 @@ using CSV
 using DifferentialEquations
 using Random
 using StatsPlots
-using StructuralIdentifiability
+#using StructuralIdentifiability
 using Colors
 using Measures
 
@@ -29,6 +29,7 @@ export CSV
 export sum_loglikelihood
 export optimise
 export funcInterpCI
+export Plots
 
 ## Include the files containing the functions
 include("makeSyntheticData.jl")
