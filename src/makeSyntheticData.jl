@@ -39,10 +39,6 @@ function makeSyntheticData(args...)
         synthetic_data = odesolver(time,model_params,ICs,ode_system)  # Generate smooth synthetic data
     end
 
-    if num_x == 1
-        synthetic_data = synthetic_data' # Make column vector a row vector
-    end
-
     # Set any unrealistically negative values to zero
     synthetic_data[synthetic_data .< 0] .= zero(eltype(synthetic_data))
     return synthetic_data

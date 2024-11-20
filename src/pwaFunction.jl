@@ -65,7 +65,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
     #######################################################################################
     ### Plot presentation preferences
     # Plot limits - add a bit of leeway in the axes
-    xmin =-0.1*t_max                        
+    xmin =-0.01*t_max                        
     xmax = t_max + 0.1 * abs(t_max)
     ymin_dat = - 0.1 * abs(maximum(data))       # For data
     ymax_dat = maximum(data) + 0.1 * abs(maximum(data))
@@ -194,18 +194,16 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             for j in 1:npts
                 function fun_upper(aa)
                     # Create an array of the unknown parameters
-                    params_combined = copy(aa[1])
-                    for k = 2:num_r-1
-                        params_combined = [params_combined, copy(aa[k])]
-                    end
+                    params_combined = copy(aa)
                     # Add the single known parameter in the array in the appropriate order
-                    params_combined = insert!(params_combined, i, ri_range_upper[j])
+                    insert!(params_combined, i, ri_range_upper[j])
                     # Evaluate the sum of loglikelihoods for this combination of parameters
                     return sum_loglikelihood(times,params_combined,ICs,ode_system,data,error_type)
                 end
 
                 # Find the non-ri parameter values that maximise the loglikelihood for each value of ri in the upper range
                 local θG_i=copy(rmle); deleteat!(θG_i,i) # Use MLE values as the guess for non-ri parameters
+                
                 local (xo,fo)=optimise(fun_upper,θG_i,lb_i,ub_i)
                 not_ri_range_upper[:,j]=xo[:]
                 llri_upper[j]=fo[1]
@@ -256,12 +254,9 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             for j in 1:npts
                 function fun_lower(aa)
                     # Create an array of the unknown parameters
-                    params_combined = copy(aa[1])
-                    for k = 2:num_r-1
-                        params_combined = [params_combined, copy(aa[k])]
-                    end
+                    params_combined = copy(aa)
                     # Add the single known parameter in the array in the appropriate order
-                    params_combined = insert!(params_combined, i, ri_range_lower[j])
+                    insert!(params_combined, i, ri_range_lower[j])
                     # Evaluate the sum of loglikelihoods for this combination of parameters
                     return sum_loglikelihood(times,params_combined,ICs,ode_system,data,error_type)
                 end
@@ -449,7 +444,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         extrme = maximum(abs,data_residuals)
         
         p_residuals = plot(                                                                                         # Create figure for residuals
-            xlab=L"t", ylab=L"\hat{e}_{i}", margin=7mm,size=(800,600),
+            xlab=L"t", ylab=L"\hat{e}_{i}", margin=7mm, size=(800,600),
             legend=false,xlims=(xmin,xmax),ylims=(-extrme-0.3*extrme,extrme+0.3*extrme),
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)                                               
         for i in 1:num_x                                                                                            # Plot data
@@ -501,8 +496,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             is_defined = 1
             global df_MLEBoundsAll_thisrow = DataFrame(column_names .=> fill(missing, length(column_names)))
         end
-        println("column names: $column_names")
-        println("Is the table already defined: $is_defined")
+
         # Parameter by parameter, fill up row of statistics
         for i in 1:num_r
             param_name = all_param_names[i]

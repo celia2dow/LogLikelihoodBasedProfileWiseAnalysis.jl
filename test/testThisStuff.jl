@@ -9,25 +9,22 @@
 ## Package installation
 #######################################################################################
 
+## PACKAGE INSTALLATION OPTION 1
 # Activate the package environment
 using Pkg
 env_path = "/Users/aliladearie/Documents/RA_work/Heterogeneity in tumour spheroid growth " * 
            "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
            # Change this depending on the location of the package in your directory
 Pkg.activate(env_path)  # Activate the environment
-
-# Check if the environment has the required packages
+# Define the environment's required packages
 required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
                      "DifferentialEquations", "Random", "Measures",
                      "StatsPlots", "StructuralIdentifiability", "Colors"]
-
 # Get the current environment's package names
 installed_packages = keys(Pkg.installed())
-
 # Flag to track if any package is missing
 missing_packages = false
-
 # Check for each required package and add if not already in Project.toml
 for pkg in required_packages
     if !(pkg in installed_packages)
@@ -43,12 +40,23 @@ for pkg in required_packages
     end
 end
 
-# Ensure all packages are installed
-if missing_packages
-    Pkg.instantiate()
-    # Pkg.update()
-end
+# ## PACKAGE INSTALLATION OPTION 2
+# import Pkg
+# env_path = "/Users/aliladearie/Documents/RA_work/Heterogeneity in tumour spheroid growth " * 
+#            "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
+#            # Change this depending on the location of the package in your directory
+# Pkg.activate(env_path)  # Activate the environment
+# # Define the environment's required packages
+# required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
+#                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
+#                      "DifferentialEquations", "Random", "Measures",
+#                      "StatsPlots", "StructuralIdentifiability", "Colors"]
+# # Ensure that the required packages are installed
+# Pkg.add(required_packages)
 
+# Check that Manifest.toml is consistent with Project.tomls of the current project and all its
+# dependencies, updating it if necessary, then instantiate. 
+Pkg.resolve()
 # Use the package
 using LogLikelihoodBasedProfileWiseAnalysis
 
@@ -180,7 +188,7 @@ pwaFunction(experi_name, times, X_array, DE!, model_params, error_type, noise_pa
 #######################################################################################
 
 ## Seed the simulation if desired
-seed_num = 1234
+seed_num = 1
 
 ## Number of points between guess and bounds for loglikelihood exploration
 npts = 40;
@@ -275,13 +283,13 @@ experi_name = "RadialDeathModelNormalNoise"
 # Mechanistic model - edit
 r1=1.0;
 r2=1.25;
-r3=75;
+r3=75.0;
 guess_r1 = 1.05;
 guess_r2 = 1.1;
-guess_r3 = 70;
+guess_r3 = 70.0;
 r1_lb = 0.9; r1_ub = 1.1;
-r2_lb = 1; r2_ub = 2;
-r3_lb = 60; r3_ub = 90;
+r2_lb = 1.0; r2_ub = 2.0;
+r3_lb = 60.0; r3_ub = 90.0;
 model_params = store_variables(     # Store the true model parameter values and their names
     ["λ","ζ","R_{d}"], 
     [r1, r2, r3], 
@@ -291,8 +299,8 @@ model_params = store_variables(     # Store the true model parameter values and 
 
 # Noise model - edit
 error_type = "Normal"               # Normal, Lognormal
-Sd = 5;
-guess_Sd = 8;
+Sd = 5.0;
+guess_Sd = 8.0;
 Sd_lb = 1.0; Sd_ub = 10.0;
 noise_params = store_variables(     # Store the true noise parameter valuess and their names
     "σ_{N}", 

@@ -9,25 +9,22 @@
 ## Package installation
 #######################################################################################
 
+## PACKAGE INSTALLATION OPTION 1
 # Activate the package environment
 using Pkg
 env_path = "/Users/aliladearie/Documents/RA_work/Heterogeneity in tumour spheroid growth " * 
            "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
            # Change this depending on the location of the package in your directory
 Pkg.activate(env_path)  # Activate the environment
-
-# Check if the environment has the required packages
+# Define the environment's required packages
 required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
                      "DifferentialEquations", "Random", "Measures",
                      "StatsPlots", "StructuralIdentifiability", "Colors"]
-
 # Get the current environment's package names
 installed_packages = keys(Pkg.installed())
-
 # Flag to track if any package is missing
 missing_packages = false
-
 # Check for each required package and add if not already in Project.toml
 for pkg in required_packages
     if !(pkg in installed_packages)
@@ -43,15 +40,25 @@ for pkg in required_packages
     end
 end
 
-# Ensure all packages are installed
-if missing_packages
-    Pkg.instantiate()
-    # Pkg.update()
-end
+# ## PACKAGE INSTALLATION OPTION 2
+# import Pkg
+# env_path = "/Users/aliladearie/Documents/RA_work/Heterogeneity in tumour spheroid growth " * 
+#            "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
+#            # Change this depending on the location of the package in your directory
+# Pkg.activate(env_path)  # Activate the environment
+# # Define the environment's required packages
+# required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
+#                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
+#                      "DifferentialEquations", "Random", "Measures",
+#                      "StatsPlots", "StructuralIdentifiability", "Colors"]
+# # Ensure that the required packages are installed
+# Pkg.add(required_packages)
 
+# Check that Manifest.toml is consistent with Project.tomls of the current project and all its
+# dependencies, updating it if necessary, then instantiate. 
+Pkg.resolve()
 # Use the package
 using LogLikelihoodBasedProfileWiseAnalysis
-
 #######################################################################################
 ## User defined settings
 #######################################################################################
