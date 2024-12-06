@@ -24,7 +24,7 @@ StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 
 [compat]
 CSV = "0.10.15"
-Colors = "0.12.11"
+Colors = "0.12.11, 0.13"
 DataFrames = "1.7.0"
 DifferentialEquations = "7.14.0"
 Distributions = "0.25.112"
