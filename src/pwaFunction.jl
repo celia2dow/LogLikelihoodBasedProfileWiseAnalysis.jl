@@ -10,12 +10,14 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
     
     #######################################################################################
     ### Initialisation including plot options, and filepaths to save outputs
-    #pyplot()                                                                                   # plot options
-    fnt = Plots.font("sans-serif", 28)                                                          # plot options
+    fnt = Plots.font("sans-serif", 12)                                                          # plot options
     global cur_colors = palette(:default)                                                       # plot options
     isdir(pwd() * "/ProfileWiseAnalysisOutput/"* experi_name *"/") || mkdir(pwd() * "/ProfileWiseAnalysisOutput/"* experi_name) # make folder to save figures if doesnt already exist
     filepath_save = [pwd() * "/ProfileWiseAnalysisOutput/"* experi_name *"/"]                   # location to save figures "//ProfileWiseAnalysisOutput//experi_name//"]
-
+    mm_to_pts_scaling = 283.46/72;
+    fig_2_across_size=(75.0*mm_to_pts_scaling,50.0*mm_to_pts_scaling);
+    # fig_3_across_size=(50.0*mm_to_pts_scaling,33.3*mm_to_pts_scaling);
+    # fig_4_across_size=(37.5*mm_to_pts_scaling,25.0*mm_to_pts_scaling);
     #######################################################################################
     ### Generate times-points for plotting known values and best fits
     t_max = times[end]
@@ -43,17 +45,17 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
     ub = [ub_r; ub_er]; ub = float.(ub);         
     num_r = length(guess_r) + length(guess_er)  # Number of model and noise parameters combined
     num_known_parameters = 0;                   # Track the number of known parameters provided to the function
-    if !isnothing(model_params.true_values)
-        r = model_params.true_values            # Model parameter values
-        num_known_parameters = num_known_parameters +length(r)
-    else
-        r = nothing
+    if !isnothing(model_params.true_values)     # If the model parameters are known ...
+        r = model_params.true_values            # ... count the number of model parameter values and add them to the total number of known paramters
+        num_known_parameters = num_known_parameters + length(r)
+    else                                        # Otherwise ...
+        r = nothing                             # ... set the number of model parameter values to 'nothing' for future case-checking
     end
-    if !isnothing(noise_params.true_values)
-        er = noise_params.true_values           # Error model parameter values
+    if !isnothing(noise_params.true_values)     # If the error model parameters are known ...
+        er = noise_params.true_values           # ... count the number of error model parameter values and add them to the total number of known parameters
         num_known_parameters = num_known_parameters +length(er)
-    else
-        er = nothing
+    else                                        # Otherwise ...
+        er = nothing                            # ... set the number of error model parameter values to 'nothing' for future case-checking
     end
 
     #######################################################################################
@@ -104,8 +106,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
 
     # Plot data against true solution (if available)
     p0scatter = plot(                                                                                   # Create figure for data (against true solution)
-        xlab=L"t", ylab=L"%$Xi_string", margin=7mm,
-        legend=false,xlims=(xmin,xmax),ylims=(ymin_dat,ymax_dat),size=(800,600),
+        xlab=L"t", ylab=L"%$Xi_string",
+        legend=false,xlims=(xmin,xmax),ylims=(ymin_dat,ymax_dat),size=fig_2_across_size,
         titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
     if !isnothing(r)                                                                                    # If the true parameter values are known
         for i in 1:num_x                                                                                # Plot true trajectories
@@ -143,8 +145,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
 
         # Plot model simulated at MLE and data
         p1 = plot(                                                                                   # Create figure for MLE best fit
-            xlab=L"t", ylab=L"%$Xi_string", margin=7mm,
-            legend=false,xlims=(xmin,xmax),ylims=(ymin_dat,ymax_dat),size=(800,600),
+            xlab=L"t", ylab=L"%$Xi_string", 
+            legend=false,xlims=(xmin,xmax),ylims=(ymin_dat,ymax_dat),size=fig_2_across_size,
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
         for i in 1:num_x                                                                             # Plot true trajectories
             p1=plot!(time_smooth,data0_smooth_MLE[i,:],lw=3,linecolor=colour[i])                     # solid - Xi(t)
@@ -159,7 +161,10 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
     #######################################################################################
         ### Profiling (using the MLE as the first guess at each point)
 
-        # Preallocate space for storing arrays
+        # Preallocate space for storing arrays with dimensions:
+        #   num_r - the total number of model and error model parameters
+        #   num_x - the total number of state variables
+        #   length(time_smooth) - the number of timesteps at which the solution has been solved for
         max_ri_store = zeros(num_r,num_x,length(time_smooth))
         min_ri_store = zeros(num_r,num_x,length(time_smooth))
         max_realisations_ri_store = zeros(num_r,num_x,length(time_smooth))
@@ -171,16 +176,16 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             # ri profile
             ri_min = lb[i]
             ri_max = ub[i]
-            ri_range_lower = reverse(LinRange(ri_min,rmle[i],npts))
-            ri_range_upper = LinRange(rmle[i] + (ri_max-rmle[i])/npts,ri_max,npts)
+            ri_range_lower = reverse(LinRange(ri_min,rmle[i],npts)) # OR ri_range_lower = ri_min:(rmle[i]-ri_min)/(npts-1):rmle[i]
+            ri_range_upper = LinRange(rmle[i] + (ri_max-rmle[i])/npts,ri_max,npts) 
 
-            not_ri_range_lower = zeros(num_r-1,npts)
+            non_ri_range_lower = zeros(num_r-1,npts)
             llri_lower = zeros(npts)
             predict_ri_lower=zeros(num_x,length(time_smooth),npts)
             predict_ri_realisations_lower_lq=zeros(num_x,length(time_smooth),npts)
             predict_ri_realisations_lower_uq=zeros(num_x,length(time_smooth),npts)
 
-            not_ri_range_upper = zeros(num_r-1,npts)
+            non_ri_range_upper = zeros(num_r-1,npts)
             llri_upper = zeros(npts)
             predict_ri_upper=zeros(num_x,length(time_smooth),npts)
             predict_ri_realisations_upper_lq=zeros(num_x,length(time_smooth),npts)
@@ -201,21 +206,21 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
                     return sum_loglikelihood(times,params_combined,ICs,ode_system,data,error_type)
                 end
 
-                # Find the non-ri parameter values that maximise the loglikelihood for each value of ri in the upper range
+                # Maximise the loglikelihood for each value of ri in the upper range to find the corresponding values of the non-ri parameters
                 local θG_i=copy(rmle); deleteat!(θG_i,i) # Use MLE values as the guess for non-ri parameters
                 
                 local (xo,fo)=optimise(fun_upper,θG_i,lb_i,ub_i)
-                not_ri_range_upper[:,j]=xo[:]
+                non_ri_range_upper[:,j]=xo[:]
                 llri_upper[j]=fo[1]
                 
                 # Find model solutions given the set value of ri, and the optimised non-ri values
                 if error_type == "Normal" || error_type == "Lognormal"
                     if i != num_r
-                        model_params_only = copy(not_ri_range_upper[1:end-1,j])
+                        model_params_only = copy(non_ri_range_upper[1:end-1,j])
                         model_params_only = insert!(model_params_only,i,ri_range_upper[j])
-                        Sd_j = not_ri_range_upper[end,j]
+                        Sd_j = non_ri_range_upper[end,j]
                     elseif i == num_r
-                        model_params_only = not_ri_range_upper[:,j]
+                        model_params_only = non_ri_range_upper[:,j]
                         Sd_j = ri_range_upper[j]
                     end
                 end
@@ -245,7 +250,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
                         else
                             l2=l1
                         end
-                        global rmle[l1] = not_ri_range_upper[l2,j]
+                        global rmle[l1] = non_ri_range_upper[l2,j]
                     end
                 end
             end
@@ -264,17 +269,17 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
                 # Find the non-ri parameter values that maximise the loglikelihood for each value of ri in the upper range
                 local θG_i=copy(rmle); deleteat!(θG_i,i)
                 local (xo,fo)=optimise(fun_lower,θG_i,lb_i,ub_i)
-                not_ri_range_lower[:,j]=xo[:]
+                non_ri_range_lower[:,j]=xo[:]
                 llri_lower[j]=fo[1]
                 
                 # Find model solutions given the set value of ri, and the optimised non-ri values
                 if error_type == "Normal" || error_type == "Lognormal"
                     if i != num_r
-                        model_params_only = copy(not_ri_range_lower[1:end-1,j])
+                        model_params_only = copy(non_ri_range_lower[1:end-1,j])
                         model_params_only = insert!(model_params_only,i,ri_range_lower[j])
-                        Sd_j = not_ri_range_lower[end,j]
+                        Sd_j = non_ri_range_lower[end,j]
                     elseif i == num_r
-                        model_params_only = not_ri_range_lower[:,j]
+                        model_params_only = non_ri_range_lower[:,j]
                         Sd_j = ri_range_lower[j]
                     end
                 end
@@ -304,7 +309,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
                         else
                             l2=l1
                         end
-                        global rmle[l1] = not_ri_range_lower[l2,j]
+                        global rmle[l1] = non_ri_range_lower[l2,j]
                     end
                 end
             end
@@ -314,8 +319,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             llri = [reverse(llri_lower); llri_upper] 
             nllri_store[i,:] = llri.-maximum(llri);
 
-            max_ri=zeros(num_x,length(time_smooth))
-            min_ri=1000*ones(num_x,length(time_smooth))
+            max_ri = -Inf * ones(num_x,length(time_smooth))
+            min_ri = Inf * ones(num_x,length(time_smooth))
             for j in 1:(npts)
                 if (llri_lower[j].-maximum(llri)) >= TH
                     for k in 1:length(time_smooth)
@@ -341,8 +346,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             min_ri_store[i,:,:] = min_ri
 
             # combine the confidence sets for realisations
-            max_realisations_ri=zeros(num_x,length(time_smooth))
-            min_realisations_ri=1000*ones(num_x,length(time_smooth))
+            max_realisations_ri = -Inf * ones(num_x,length(time_smooth))
+            min_realisations_ri = Inf * ones(num_x,length(time_smooth))
             for j in 1:(npts)
                 if (llri_lower[j].-maximum(llri)) >= TH_realisations
                     for k in 1:length(time_smooth)
@@ -380,8 +385,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
 
         # Plot model simulated at MLE and data
         p1_updated = plot(                                                                                  # Create figure for MLE best fit
-            xlab=L"t", ylab=L"%$Xi_string", margin=7mm,
-            legend=false,xlims=(xmin,xmax),ylims=(ymin_dat,ymax_dat),size=(800,600),
+            xlab=L"t", ylab=L"%$Xi_string", 
+            legend=false,xlims=(xmin,xmax),ylims=(ymin_dat,ymax_dat),size=fig_2_across_size,
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)                                                      
         for i in 1:num_x                                                                                    # Plot best fit trajectories
             p1_updated=plot!(time_smooth,data0_smooth_MLE_recomputed[i,:],lw=3,linecolor=colour[i])         # solid - Xi(t)
@@ -412,8 +417,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
 
             # Plot the loglikelihood profile of parameter ri
             profile_i=plot(                                                                                
-                interp_points_ri_range,interp_nllri,xlim=(ri_min,ri_max),ylim=(ymin_prof,ymax_prof),yticks=yticks_prof,margin=7mm,
-                xlab=L"%$param_name",ylab=L"\hat{\ell}_{p}",legend=false,lw=5,titlefont=fnt, guidefont=fnt, tickfont=fnt,size=(800,600),
+                interp_points_ri_range,interp_nllri,xlim=(ri_min,ri_max),ylim=(ymin_prof,ymax_prof),yticks=yticks_prof,
+                xlab=L"%$param_name",ylab=L"\hat{\ell}_{p}",legend=false,lw=5,titlefont=fnt, guidefont=fnt, tickfont=fnt,size=fig_2_across_size,
                 legendfont=fnt,linecolor=:deepskyblue3)
             profile_i=hline!([-1.92],lw=2,linecolor=:black,linestyle=:dot)
             profile_i=vline!([rmle[i]],lw=3,linecolor=:red)
@@ -444,7 +449,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         extrme = maximum(abs,data_residuals)
         
         p_residuals = plot(                                                                                         # Create figure for residuals
-            xlab=L"t", ylab=L"\hat{e}_{i}", margin=7mm, size=(800,600),
+            xlab=L"t", ylab=L"\hat{e}_{i}", size=fig_2_across_size,
             legend=false,xlims=(xmin,xmax),ylims=(-extrme-0.3*extrme,extrme+0.3*extrme),
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)                                               
         for i in 1:num_x                                                                                            # Plot data
@@ -459,16 +464,16 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         if error_type == "Normal"
             p_residuals_qqplot = plot(                                                                              # QQ-plot with Normal percentiles
                 qqplot(Normal,data_residuals[:],lw=2,linecolor=:black,linestyle=:dot,markersize = 8,markercolor=:black),
-                legend=false,xlab=L"\mathrm{Normal}",ylab=L"\mathrm{Residuals}",lw=3,titlefont=fnt, guidefont=fnt,size=(800,600),
-                tickfont=fnt,ylims=(-15,15),margin=7mm,yticks=[-10,0,10])
+                legend=false,xlab=L"\mathrm{Normal}",ylab=L"\mathrm{Residuals}",lw=3,titlefont=fnt, guidefont=fnt,size=fig_2_across_size,
+                tickfont=fnt,ylims=(-15,15),yticks=[-10,0,10])
             display(p_residuals_qqplot)
             savefig(p_residuals_qqplot,filepath_save[1] * "Figp_residuals_qqplot"   * ".pdf")
             savefig(p_residuals_qqplot,filepath_save[1] * "Figp_residuals_qqplot"   * ".png")
         elseif error_type == "Lognoraml"
             data_residuals_multiplicative = data./data0_MLE_recomputed_for_residuals                                # Scale by inverse of mean
             p_residuals_qqplot_lognormal = plot(                                                                    # QQ-plot with LogNormal percentiles
-                qqplot(LogNormal,data_residuals_multiplicative[:],lw=2,linecolor=:black,linestyle=:dot,markersize = 8,markercolor=:black),size=(800,600),
-                legend=false,margin=7mm,xlab=L"\mathrm{LogNormal}",ylab=L"\hat{e}_{i}",lw=3,titlefont=fnt, guidefont=fnt, tickfont=fnt)
+                qqplot(LogNormal,data_residuals_multiplicative[:],lw=2,linecolor=:black,linestyle=:dot,markersize = 8,markercolor=:black),size=fig_2_across_size,
+                legend=false,xlab=L"\mathrm{LogNormal}",ylab=L"\hat{e}_{i}",lw=3,titlefont=fnt, guidefont=fnt, tickfont=fnt)
             display(p_residuals_qqplot_lognormal)
             savefig(p_residuals_qqplot_lognormal,filepath_save[1] * "Figp_residuals_qqplot_lognormal"   * ".pdf")
             savefig(p_residuals_qqplot_lognormal,filepath_save[1] * "Figp_residuals_qqplot_lognormal"   * ".png")
@@ -546,8 +551,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             
             # ri - plot model simulated at MLE, scatter data, and prediction interval.
             confmodel_i = plot(                                                                         # Create figure for parameter ri
-                xlab=L"t", ylab=L"%$Xi_string", margin=7mm,                                                                                   
-                legend=false,xlims=(xmin,xmax),ylims=(ymin_datCI,ymax_datCI),size=(800,600),
+                xlab=L"t", ylab=L"%$Xi_string",                                                                               
+                legend=false,xlims=(xmin,xmax),ylims=(ymin_datCI,ymax_datCI),size=fig_2_across_size,
                 titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
             for j in 1:num_x                                                                            # Plot best fit trajectories
                 confmodel_i=plot!(time_smooth,data0_smooth_MLE_recomputed[j,:],lw=3,linecolor=colour[j])# solid - Xi(t)
@@ -570,8 +575,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         end
         
         # union
-        max_overall=zeros(num_x,length(time_smooth))
-        min_overall=1000*ones(num_x,length(time_smooth))
+        max_overall = -Inf * ones(num_x,length(time_smooth))
+        min_overall = Inf * ones(num_x,length(time_smooth))
         for i in 1:num_x
             for j in 1:length(time_smooth)
                 max_overall[i,j]=maximum(max_ri_store[:,i,j])
@@ -581,8 +586,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
 
         # Plot model simulated at MLE, scatter data, and prediction interval for union of parameters.
         confmodel_u = plot(                                                                         # Create figure for union of parameters
-            xlab=L"t", ylab=L"%$Xi_string", margin=7mm,                                                                                  
-            legend=false,xlims=(xmin,xmax),ylims=(ymin_datCI,ymax_datCI),size=(800,600),
+            xlab=L"t", ylab=L"%$Xi_string",                                                                                  
+            legend=false,xlims=(xmin,xmax),ylims=(ymin_datCI,ymax_datCI),size=fig_2_across_size,
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
         for i in 1:num_x                                                                            # Plot best fit trajectories
             confmodel_u=plot!(time_smooth,data0_smooth_MLE_recomputed[i,:],lw=3,linecolor=colour[i])# solid - Xi(t)
@@ -625,8 +630,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         for i = 1:num_r
             param_name = all_param_names[i]
             confmodeldiff_i = plot(                                                                     # Create figure for parameter ri
-                xlab=L"t", ylab=L"C_{y,0.95}^{%$param_name} - y(\hat{\theta})", margin=7mm,                                                                                   
-                legend=false,xlims=(xmin,xmax),ylims=(ymin_CI1,ymax_CI1),size=(800,600),
+                xlab=L"t", ylab=L"C_{y,0.95}^{%$param_name} - y(\hat{\theta})",                                                                                   
+                legend=false,xlims=(xmin,xmax),ylims=(ymin_CI1,ymax_CI1),size=fig_2_across_size,
                 titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
             for j = 1:num_x
                 confmodeldiff_i = plot!(                                                                # Plot the confidence ribbons
@@ -647,8 +652,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         
         # union
         confmodeldiff_u = plot(                                                                         # Create figure for union of parameters
-            xlab=L"t", ylab=L"C_{y,0.95} - y(\hat{\theta})", margin=7mm,                                                                                   
-            legend=false,xlims=(xmin,xmax),ylims=(ymin_CI1,ymax_CI1),size=(800,600),
+            xlab=L"t", ylab=L"C_{y,0.95} - y(\hat{\theta})",                                                                                 
+            legend=false,xlims=(xmin,xmax),ylims=(ymin_CI1,ymax_CI1),size=fig_2_across_size,
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt) 
         for  i in 1:num_x
             confmodeldiff_u=plot!(                                                                      # Plot the confidence ribbons
@@ -689,8 +694,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             
             # ri - plot model simulated at MLE, scatter data, and confidence set for model realisations.
             confreal_i = plot(                                                                          # Create figure for parameter ri
-                xlab=L"t", ylab=L"%$Xi_string", margin=7mm,                                                                                  
-                legend=false,xlims=(xmin,xmax),ylims=(ymin_realCI,ymax_realCI),size=(800,600),
+                xlab=L"t", ylab=L"%$Xi_string",                                                                        
+                legend=false,xlims=(xmin,xmax),ylims=(ymin_realCI,ymax_realCI),size=fig_2_across_size,
                 titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
             for j in 1:num_x                                                                            # Plot best fit trajectories
                 confreal_i=plot!(time_smooth,data0_smooth_MLE_recomputed[j,:],lw=3,linecolor=colour[j]) # solid - Xi(t)
@@ -713,8 +718,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         end
         
         # union
-        max_realisations_overall=zeros(num_x,length(time_smooth))
-        min_realisations_overall=1000*ones(num_x,length(time_smooth))
+        max_realisations_overall = -Inf * ones(num_x,length(time_smooth))
+        min_realisations_overall = Inf * ones(num_x,length(time_smooth))
         for i in 1:num_x
             for j in 1:length(time_smooth)
                 max_realisations_overall[i,j]=maximum(max_realisations_ri_store[:,i,j])
@@ -724,8 +729,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
 
         # Plot model simulated at MLE, scatter data, and confidence set for model realisations for union of parameters.
         confreal_u = plot(                                                                          # Create figure for union of parameters
-            xlab=L"t", ylab=L"%$Xi_string", margin=7mm,                                                                                  
-            legend=false,xlims=(xmin,xmax),ylims=(ymin_realCI,ymax_realCI),size=(800,600),
+            xlab=L"t", ylab=L"%$Xi_string",                                                                               
+            legend=false,xlims=(xmin,xmax),ylims=(ymin_realCI,ymax_realCI),size=fig_2_across_size,
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
         for i in 1:num_x                                                                            # Plot best fit trajectories
             confreal_u=plot!(time_smooth,data0_smooth_MLE_recomputed[i,:],lw=3,linecolor=colour[i]) # solid - Xi(t)
@@ -768,8 +773,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         for i = 1:num_r
             param_name = all_param_names[i]
             confrealdiff_i = plot(                                                                     # Create figure for parameter ri
-                xlab=L"t", ylab=L"C_{z_{i},0.95}^{%$param_name} - y(\hat{\theta})", margin=7mm,                                                                                   
-                legend=false,xlims=(xmin,xmax),ylims=(ymin_CI2,ymax_CI2),size=(800,600),
+                xlab=L"t", ylab=L"C_{z_{i},0.95}^{%$param_name} - y(\hat{\theta})",                                                                                    
+                legend=false,xlims=(xmin,xmax),ylims=(ymin_CI2,ymax_CI2),size=fig_2_across_size,
                 titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)   
             for j = 1:num_x
                 confrealdiff_i = plot!(                                                                # Plot the confidence ribbons
@@ -790,8 +795,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         
         # union
         confrealdiff_u = plot(                                                                         # Create figure for union of parameters
-            xlab=L"t", ylab=L"C_{z_{i},0.95} - y(\hat{\theta})", margin=7mm,                                                                                   
-            legend=false,xlims=(xmin,xmax),ylims=(ymin_CI2,ymax_CI2),size=(800,600),
+            xlab=L"t", ylab=L"C_{z_{i},0.95} - y(\hat{\theta})",                                                                                
+            legend=false,xlims=(xmin,xmax),ylims=(ymin_CI2,ymax_CI2),size=fig_2_across_size,
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt) 
         for  i in 1:num_x
             confrealdiff_u=plot!(                                                                      # Plot the confidence ribbons

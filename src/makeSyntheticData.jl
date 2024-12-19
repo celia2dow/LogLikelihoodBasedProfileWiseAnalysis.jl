@@ -6,13 +6,13 @@ function makeSyntheticData(args...)
 
     # Assign arguments to appropriate labels
     num_args = length(args) # Check the number of arguemtns
-    if num_args == 4        # The case with no noise
-        time, ICs, ode_system, model_params = args
+    if num_args == 5        # The case with no noise
+        time, ICs, ode_system, model_params, noNegatives = args
         error_type = "NoNoise"
-    elseif num_args == 5    # The case with no noise inputted as a parameter
-        time, ICs, ode_system, model_params, error_type = args
-    elseif num_args == 6    # The case with noise
-        time, ICs, ode_system, model_params, error_type, noise_params = args
+    elseif num_args == 6    # The case with no noise paramter inputs
+        time, ICs, ode_system, model_params, error_type, noNegatives = args
+    elseif num_args == 7    # The case with noise
+        time, ICs, ode_system, model_params, error_type, noise_params, noNegatives = args
     else
         println("makeSyntheticData: not enough inputs \n")
     end
@@ -29,9 +29,12 @@ function makeSyntheticData(args...)
     if error_type == "Normal"
         Sd = noise_params
         sol1 = odesolver(time,model_params,ICs,ode_system)
-        data_dists=[Normal(mu,Sd) for mu in odesolver(time,model_params,ICs,ode_system)];   # Generate normal distributions for each time point
+        data_dists=[Normal(mu,Sd) for mu in sol1];   # Generate normal distributions for each time point
         synthetic_data=[rand(data_dist) for data_dist in data_dists];                       # Generate the noisy synthetic data from these distributions
-        synthetic_data[synthetic_data .< 0] .= zero(eltype(synthetic_data))                 # Set any negative values to zero
+        if noNegatives
+            # Set any unrealistically negative values to zero
+            synthetic_data[synthetic_data .< 0] .= zero(eltype(synthetic_data))                 # Set any negative values to zero
+        end
     elseif error_type == "Lognormal"
         Sd = noise_params
         synthetic_data = [mu*rand(LogNormal(0,Sd)) for mu in odesolver(time,model_params,ICs,ode_system)]; # Generate the noisy synthetic data
@@ -39,7 +42,5 @@ function makeSyntheticData(args...)
         synthetic_data = odesolver(time,model_params,ICs,ode_system)  # Generate smooth synthetic data
     end
 
-    # Set any unrealistically negative values to zero
-    synthetic_data[synthetic_data .< 0] .= zero(eltype(synthetic_data))
     return synthetic_data
 end

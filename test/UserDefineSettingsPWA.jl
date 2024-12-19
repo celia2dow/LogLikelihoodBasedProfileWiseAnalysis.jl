@@ -8,103 +8,30 @@
 #######################################################################################
 ## Package installation
 #######################################################################################
-
-## PACKAGE INSTALLATION OPTION 1
-# Activate the package environment
+# Top level business
 using Pkg
+include("envActivate.jl")
+
+# Define the path to the environment - edit
 env_path = "/Users/aliladearie/Documents/RA_work/Heterogeneity in tumour spheroid growth " * 
-           "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
-           # Change this depending on the location of the package in your directory
-Pkg.activate(env_path)  # Activate the environment
-# Define the environment's required packages
+        "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
+
+# Define the environment's required packages - edit
 required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
-                     "Roots", "LaTeXStrings", "CSV", "DataFrames", 
-                     "DifferentialEquations", "Random", "Measures",
-                     "StatsPlots", "StructuralIdentifiability", "Colors"]
-# Get the current environment's package names
-installed_packages = keys(Pkg.installed())
-# Flag to track if any package is missing
-missing_packages = false
-# Check for each required package and add if not already in Project.toml
-for pkg in required_packages
-    if !(pkg in installed_packages)
-        global missing_packages = true
-        println("Missing package: $pkg. Installing...")  # Print the missing package name
-        Pkg.add(pkg)
-    elseif pkg == "StructuralIdentifiability" 
-        println("Specific version of $pkg required. Installing...")  # Print the package name
-        Pkg.add(Pkg.PackageSpec(;name="StructuralIdentifiability", version="v0.5.1")) # need to use older version
-    elseif pkg == "CSV"
-        println("Specific version of $pkg required. Installing...")  # Print the package name
-        Pkg.add(pkg)
-    elseif pkg == "Random"
-        println("Specific version of $pkg required. Installing...")  # Print the package name
-        Pkg.add(Pkg.PackageSpec(;name="Random", version="1.9.3"))
-    else
-        println("$pkg is already installed.")  # Print the already installed package
-    end
-end
+        "Roots", "LaTeXStrings", "CSV", "DataFrames", 
+        "DifferentialEquations", "Random", "Measures",
+        "StatsPlots", "Colors"]
 
-# ## PACKAGE INSTALLATION OPTION 2
-# import Pkg
-# env_path = "/Users/aliladearie/Documents/RA_work/Heterogeneity in tumour spheroid growth " * 
-#            "dynamics/Code/Murphy2023ErrorModels-main/LogLikelihoodBasedProfileWiseAnalysis" 
-#            # Change this depending on the location of the package in your directory
-# Pkg.activate(env_path)  # Activate the environment
-# # Define the environment's required packages
-# required_packages = ["Plots", "NLopt", "Interpolations", "Distributions", 
-#                      "Roots", "LaTeXStrings", "CSV", "DataFrames", 
-#                      "DifferentialEquations", "Random", "Measures",
-#                      "StatsPlots", "Colors"]
-# # Ensure that the required packages are installed
-# Pkg.add(required_packages)
-# Pkg.add(Pkg.PackageSpec(;name="StructuralIdentifiability", version="v0.5.1")) # need to use older version
+# Activate the environment with the appropriate packages via the function with inputs:
+# (activOption, envPath, requiredPackages)
+envActivate(1, env_path, required_packages)
 
-
-# Check that Manifest.toml is consistent with Project.tomls of the current project and all its
-# dependencies, updating it if necessary, then instantiate. 
-Pkg.resolve()
 # Use the package
 using LogLikelihoodBasedProfileWiseAnalysis
+
 #######################################################################################
 ## User defined settings
 #######################################################################################
-
-## Parameters
-struct store_variables # DO NOT EDIT
-    names::Union{Vector{String}, String}                    # String for names
-    true_values::Union{Vector{Float64}, Float64, Int64, Nothing}   # True values if known
-    lower_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}  # Lower bounds
-    upper_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}  # Upper bounds
-    initial_values::Union{Vector{Float64}, Float64, Int64}         # Initial guesses or initial conditions
-    # Constructor function for all five fields
-    function store_variables(names::Union{Vector{String}, String}, 
-        true_values::Union{Vector{Float64}, Float64, Int64, Nothing},
-        lower_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}, 
-        upper_bounds::Union{Vector{Float64}, Float64, Int64, Nothing},  
-        initial_values::Union{Vector{Float64}, Float64, Int64})
-        return new(names, true_values, lower_bounds, upper_bounds, initial_values)
-    end
-    # Constructor function for four fields
-    function store_variables(names::Union{Vector{String}, String}, 
-        lower_bounds::Union{Vector{Float64}, Float64, Int64, Nothing}, 
-        upper_bounds::Union{Vector{Float64}, Float64, Int64, Nothing},  
-        initial_values::Union{Vector{Float64}, Float64, Int64})
-        return new(names, nothing, lower_bounds, upper_bounds, initial_values) # Assign nothing to true_values
-    end
-    # Constructor function for two fields (default true_values to nothing)
-    function store_variables(names::Union{Vector{String}, String}, 
-        initial_values::Union{Vector{Float64}, Float64, Int64})
-        return new(names, nothing, nothing, nothing, initial_values)  # Assign nothing to true_values and bounds
-    end
-end
-# Store in the following form: 
-#       store_variables([name1, name 2, ...], [true_value1, true_value2, ...], [lower_bound1, lower_bound2, ...], [upper_bound1, upper_bound2,...], [initial_value1, initial_value2, ...])
-# Or if true values are unknown:
-#       store_variables([name1, name 2, ...], [lower_bound1, lower_bound2, ...], [upper_bound1, upper_bound2,...], [guess_value1, initial_value2, ...])
-# Or if true values and bounds are unnecessary:
-#       store_variables([name1, name 2, ...], [guess_value1, initial_value2, ...])
-
 ## Seed the simulation if desired
 seed_num = 1234
 
@@ -115,6 +42,15 @@ npts = 40;
 experi_name = "TwoCellPopulationsNormalNoise"
 
 ## Parameters
+# Create the struct for information storage
+store_variables = defineStruct() 
+# store_variables stores parameter information in the following form: 
+#       store_variables([name1, name 2, ...], [true_value1, true_value2, ...], [lower_bound1, lower_bound2, ...], [upper_bound1, upper_bound2,...], [initial_value1, initial_value2, ...])
+# Or if true values are unknown:
+#       store_variables([name1, name 2, ...], [lower_bound1, lower_bound2, ...], [upper_bound1, upper_bound2,...], [guess_value1, initial_value2, ...])
+# Or if true values and bounds are unnecessary:
+#       store_variables([name1, name 2, ...], [guess_value1, initial_value2, ...])
+
 # Mechanistic model - edit
 r1=1.0;
 r2=0.5;
@@ -152,7 +88,7 @@ X_array = store_variables(          # Store the initial conditions and the names
 t_max = 2.0; 
 times = LinRange(0.0,t_max, 16); # synthetic data measurement times at which to generate data points
 
-## Mathematical model: system of differential equations (ODE or PDE) - edit
+## Mathematical model: system of differential equations (ODE or PDE) - edit # NEED TO ADD THE CAPABILITY TO WORK WITH PDEs TO THE WORKFLOW
 # 1 state variable example:
 # f(u,p,t) = (p[1]*u/3) * (1 - max(0, (1+p[2]/p[1]) * (u-p[3])^3/(u^3))) # p[1]=λ, p[2]=zeta, and p[3]=R_d
 # More than 1 state variable example:
@@ -171,9 +107,12 @@ if !isdefined(Main, :seed_num)
     seed_num = rand(1000:9999)
 end
 
+# Is synthetic data allowed to be negative? true/false
+noNegatives = true
+
 # Generate data synthetically
 Random.seed!(seed_num)
-data = makeSyntheticData(times, X_array.initial_values, DE!, model_params.true_values, error_type, noise_params.true_values)
+data = makeSyntheticData(times, X_array.initial_values, DE!, model_params.true_values, error_type, noise_params.true_values, noNegatives)
 df_data = DataFrame(data, :auto)  # Use :auto to automatically name columns
 CSV.write( "synthetic_data" * experi_name * string(seed_num) * ".csv", df_data)
 

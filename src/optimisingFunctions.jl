@@ -19,7 +19,7 @@ function sum_loglikelihood(times,params_combined,ICs,ode_system,data,error_type)
         Sd = params_combined[end]
         model_params = params_combined[1:end-1]
         data_dists=[LogNormal(0,params_combined[end]) for mi in y]; # Generate LogNormal distributions for each times point
-        e+=sum([loglikelihood(data_dists[i],data[i]./y[i]) for i in 1:length(data_dists)]) 
+        e+=sum([loglikelihood(data_dists[i],data[i]./y[i]) for i in 1:length(data_dists)]) # RYAN TO IMPROVE
     end
 
     return e
@@ -33,10 +33,12 @@ function optimise(fun,θ₀,lb,ub)
     opt.max_objective = tomax                   # Optimisation method is maximisation
     opt.lower_bounds = lb                       # Lower bound
     opt.upper_bounds = ub                       # Upper bound
-    opt.maxtime = 30.0;                        # maximum times in seconds
+    opt.maxtime = 180.0;                        # maximum times in seconds 
     res = optimize(opt,θ₀)                      # Results of optimisation include: 
                                                 # the otpimising paramter values θ and 
                                                 # the value of the loglikelihood sum given θ
+    # PRINT OUTPUT TO SEE IF OPTIMA IS REACHED
+    # @time res = optimize(opt,θ₀)
     return res[[2,1]]
 end
 
