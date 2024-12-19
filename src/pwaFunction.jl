@@ -10,7 +10,8 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
     
     #######################################################################################
     ### Initialisation including plot options, and filepaths to save outputs
-    fnt = Plots.font("sans-serif", 12)                                                          # plot options
+    fnt = Plots.font("sans-serif", 12)    
+    mrkrsize = 4                                                      # plot options
     global cur_colors = palette(:default)                                                       # plot options
     isdir(pwd() * "/ProfileWiseAnalysisOutput/"* experi_name *"/") || mkdir(pwd() * "/ProfileWiseAnalysisOutput/"* experi_name) # make folder to save figures if doesnt already exist
     filepath_save = [pwd() * "/ProfileWiseAnalysisOutput/"* experi_name *"/"]                   # location to save figures "//ProfileWiseAnalysisOutput//experi_name//"]
@@ -115,7 +116,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         end
     end
     for i in 1:num_x                                                                                    # Plot data
-        p0scatter=scatter!(times,data[i,:],markersize = 8,markercolor=colour[i],markerstrokewidth=0)     # scatter - Xi(t)
+        p0scatter=scatter!(times,data[i,:],markersize = mrkrsize,markercolor=colour[i],markerstrokewidth=0)     # scatter - Xi(t)
     end
     display(p0scatter)
     savefig(p0scatter,filepath_save[1] * "Fig0scatter" * ".pdf")
@@ -152,7 +153,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             p1=plot!(time_smooth,data0_smooth_MLE[i,:],lw=3,linecolor=colour[i])                     # solid - Xi(t)
         end
         for i in 1:num_x                                                                             # Plot data
-            p1=scatter!(times,data[i,:],markersize = 8,markercolor=colour[i],markerstrokewidth=0)     # scatter - Xi(t)
+            p1=scatter!(times,data[i,:],markersize = mrkrsize,markercolor=colour[i],markerstrokewidth=0)     # scatter - Xi(t)
         end
         display(p1)
         savefig(p1,filepath_save[1] * "Fig1" * ".pdf")
@@ -392,7 +393,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             p1_updated=plot!(time_smooth,data0_smooth_MLE_recomputed[i,:],lw=3,linecolor=colour[i])         # solid - Xi(t)
         end
         for i in 1:num_x                                                                                    # Plot data
-            p1_updated=scatter!(times,data[i,:],markersize = 8,markercolor=colour[i],markerstrokewidth=0)    # scatter - Xi(t)
+            p1_updated=scatter!(times,data[i,:],markersize = mrkrsize,markercolor=colour[i],markerstrokewidth=0)    # scatter - Xi(t)
         end
         display(p1_updated)
         savefig(p1_updated,filepath_save[1] * "Figp1_updated" * ".pdf")
@@ -453,7 +454,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             legend=false,xlims=(xmin,xmax),ylims=(-extrme-0.3*extrme,extrme+0.3*extrme),
             titlefont=fnt,guidefont=fnt,tickfont=fnt,legendfont=fnt)                                               
         for i in 1:num_x                                                                                            # Plot data
-            p_residuals=scatter!(times,data_residuals[i,:],markersize =8,markercolor=colour[i],markerstrokewidth=0) # scatter - Xi(t)    
+            p_residuals=scatter!(times,data_residuals[i,:],markersize =mrkrsize,markercolor=colour[i],markerstrokewidth=0) # scatter - Xi(t)    
         end
         p_residuals=hline!([0],lw=2,linecolor=:black,linestyle=:dot)                                                # Line of agreeance
         display(p_residuals)
@@ -463,7 +464,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         # Plot qq-plot
         if error_type == "Normal"
             p_residuals_qqplot = plot(                                                                              # QQ-plot with Normal percentiles
-                qqplot(Normal,data_residuals[:],lw=2,linecolor=:black,linestyle=:dot,markersize = 8,markercolor=:black),
+                qqplot(Normal,data_residuals[:],lw=2,linecolor=:black,linestyle=:dot,markersize = mrkrsize,markercolor=:black),
                 legend=false,xlab=L"\mathrm{Normal}",ylab=L"\mathrm{Residuals}",lw=3,titlefont=fnt, guidefont=fnt,size=fig_2_across_size,
                 tickfont=fnt,ylims=(-15,15),yticks=[-10,0,10])
             display(p_residuals_qqplot)
@@ -472,7 +473,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
         elseif error_type == "Lognoraml"
             data_residuals_multiplicative = data./data0_MLE_recomputed_for_residuals                                # Scale by inverse of mean
             p_residuals_qqplot_lognormal = plot(                                                                    # QQ-plot with LogNormal percentiles
-                qqplot(LogNormal,data_residuals_multiplicative[:],lw=2,linecolor=:black,linestyle=:dot,markersize = 8,markercolor=:black),size=fig_2_across_size,
+                qqplot(LogNormal,data_residuals_multiplicative[:],lw=2,linecolor=:black,linestyle=:dot,markersize = mrkrsize,markercolor=:black),size=fig_2_across_size,
                 legend=false,xlab=L"\mathrm{LogNormal}",ylab=L"\hat{e}_{i}",lw=3,titlefont=fnt, guidefont=fnt, tickfont=fnt)
             display(p_residuals_qqplot_lognormal)
             savefig(p_residuals_qqplot_lognormal,filepath_save[1] * "Figp_residuals_qqplot_lognormal"   * ".pdf")
@@ -558,7 +559,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
                 confmodel_i=plot!(time_smooth,data0_smooth_MLE_recomputed[j,:],lw=3,linecolor=colour[j])# solid - Xi(t)
             end
             for j in 1:num_x                                                                            # Plot data
-                confmodel_i=scatter!(times,data[j,:],markersize = 8,markercolor=colour[j],msw=0)         # scatter Xi(t)
+                confmodel_i=scatter!(times,data[j,:],markersize = mrkrsize,markercolor=colour[j],msw=0)         # scatter Xi(t)
             end
             for j in 1:num_x                                                                            # Plot the confidence ribbons
                 confmodel_i=plot!(
@@ -593,7 +594,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             confmodel_u=plot!(time_smooth,data0_smooth_MLE_recomputed[i,:],lw=3,linecolor=colour[i])# solid - Xi(t)
         end
         for i in 1:num_x                                                                            # Plot data
-            confmodel_u=scatter!(times,data[i,:],markersize = 8,markercolor=colour[i],msw=0)         # scatter Xi(t)
+            confmodel_u=scatter!(times,data[i,:],markersize = mrkrsize,markercolor=colour[i],msw=0)         # scatter Xi(t)
         end
         for i in 1:num_x                                                                            # Plot the confidence ribbons
             confmodel_u=plot!(
@@ -701,7 +702,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
                 confreal_i=plot!(time_smooth,data0_smooth_MLE_recomputed[j,:],lw=3,linecolor=colour[j]) # solid - Xi(t)
             end
             for j in 1:num_x                                                                            # Plot data
-                confreal_i=scatter!(times,data[j,:],markersize = 8,markercolor=colour[j],msw=0)          # scatter Xi(t)
+                confreal_i=scatter!(times,data[j,:],markersize = mrkrsize,markercolor=colour[j],msw=0)          # scatter Xi(t)
             end
             for j in 1:num_x                                                                            # Plot the confidence ribbons
                 confreal_i=plot!(
@@ -736,7 +737,7 @@ function pwaFunction(experi_name, times, X_array, ode_system, model_params, erro
             confreal_u=plot!(time_smooth,data0_smooth_MLE_recomputed[i,:],lw=3,linecolor=colour[i]) # solid - Xi(t)
         end
         for i in 1:num_x                                                                            # Plot data
-            confreal_u=scatter!(times,data[i,:],markersize = 8,markercolor=colour[i],msw=0)          # scatter Xi(t)
+            confreal_u=scatter!(times,data[i,:],markersize = mrkrsize,markercolor=colour[i],msw=0)          # scatter Xi(t)
         end
         for i in 1:num_x                                                                            # Plot the confidence ribbons
             confreal_u=plot!(
