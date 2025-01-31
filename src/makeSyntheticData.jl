@@ -14,7 +14,7 @@ function makeSyntheticData(args...)
     elseif num_args == 7    # The case with noise
         time, ICs, ode_system, model_params, error_type, noise_params, noNegatives = args
     else
-        println("makeSyntheticData: not enough inputs \n")
+        println("makeSyntheticData: should be 5-7 inputs \n")
     end
     num_x = length(ICs);    # Find the number of state variables
     

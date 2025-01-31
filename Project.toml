@@ -19,8 +19,10 @@ PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
+Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 
 [compat]
 CSV = "0.10.15"
@@ -35,8 +37,10 @@ NLopt = "1.1.1"
 Plots = "1.40.8"
 Random = "1.9.3"
 Roots = "2.2.1"
+StatsBase = "0.34.4"
 StatsPlots = "0.15.7"
 StructuralIdentifiability = "0.5.1"
+Suppressor = "0.2.8"
 julia = "1.6.7"
 
 [extras]

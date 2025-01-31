@@ -14,8 +14,10 @@ using CSV
 using DifferentialEquations
 using Random
 using StatsPlots
+using StatsBase
 using Colors
 using Measures
+using Suppressor
 
 ## Export functions to be used
 # Plots
@@ -31,7 +33,7 @@ export LogNormal
 # LaTeXStrings
 export @L_str
 # DataFrames
-export DataFrame            
+export DataFrame       
 # CSV
 export CSV
 # Random
@@ -39,6 +41,8 @@ export Random
 # Using StatsPlots
 export quantile
 export qqplot
+# Using StatsBase
+export sample
 # Colors
 export palette
 export RGB
@@ -46,6 +50,11 @@ export RGB
 export mm
 # makeSyntheticData
 export makeSyntheticData    # Function for generating synthetic data from a given model and paramters
+# dataManagementFunctions
+export loadExtractData      # Function for loading and extracting data from a file given paticular settings
+export storeMultiVars       # Function for storing numerous measurements of state variables in the appropriate array or dictionary
+# get_darker_colour
+export get_darker_colour
 # pwaFunction
 export pwaFunction          # Function for running the profile-wise analysis and generating summary figures
 # odesolver
@@ -60,6 +69,8 @@ export defineStruct         # Function for defining the struct to store paramete
 
 ## Include the files containing the functions
 include("makeSyntheticData.jl")
+include("dataManagementFunctions.jl")
+include("get_darker_colour.jl")
 include("pwaFunction.jl")
 include("odesolver.jl")
 include("optimisingFunctions.jl")
