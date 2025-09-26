@@ -26,7 +26,7 @@ Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 
 [compat]
 CSV = "0.10.15"
-Colors = "0.12.11"
+Colors = "0.12.11, 0.13"
 DataFrames = "1.7.0"
 DifferentialEquations = "7.14.0"
 Distributions = "0.25.112"
