@@ -1,7 +1,7 @@
 name = "LogLikelihoodBasedProfileWiseAnalysis"
 uuid = "493b933c-d143-48f4-8bd8-1e29dbd5d17d"
-authors = ["Celia-Dowling"]
 version = "1.0.0-DEV"
+authors = ["Celia-Dowling"]
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -25,7 +25,7 @@ StructuralIdentifiability = "220ca800-aa68-49bb-acd8-6037fa93a544"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 
 [compat]
-CSV = "0.10.15"
+CSV = "0.10.15, 1"
 Colors = "0.12.11"
 DataFrames = "1.7.0"
 DifferentialEquations = "7.14.0"
