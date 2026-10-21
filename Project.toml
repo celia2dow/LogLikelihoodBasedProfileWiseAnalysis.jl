@@ -1,7 +1,7 @@
 name = "LogLikelihoodBasedProfileWiseAnalysis"
 uuid = "493b933c-d143-48f4-8bd8-1e29dbd5d17d"
-authors = ["Celia-Dowling"]
 version = "1.0.0-DEV"
+authors = ["Celia-Dowling"]
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -30,7 +30,7 @@ Colors = "0.12.11"
 DataFrames = "1.7.0"
 DifferentialEquations = "7.14.0"
 Distributions = "0.25.112"
-Interpolations = "0.15.1"
+Interpolations = "0.15.1, 0.16"
 LaTeXStrings = "1.4.0"
 Measures = "0.3.2"
 NLopt = "1.1.1"
